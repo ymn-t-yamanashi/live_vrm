@@ -25,6 +25,10 @@ defmodule ThreeWeb.Cg.CgHelper do
     push_event(socket, "getBone", %{name: name})
   end
 
+  def set_blend_shape(socket, name, key, value) do
+    push_event(socket, "setBlendShape", %{name: name, key: key, value: value})
+  end
+
   def rotation_bone(socket, name, bone_name, x, y, z) do
     push_event(socket, "rotationBone", %{name: name, bone_name: bone_name, x: x, y: y, z: z})
   end

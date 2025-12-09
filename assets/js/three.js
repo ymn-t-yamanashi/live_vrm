@@ -113,11 +113,6 @@ export const hooks = {
           // レンダーループで vrm.update を呼ぶためにキャッシュ
           if (!v._vrms) v._vrms = [];
           v._vrms.push(vrm);
-
-          vrm.expressionManager.setValue('aa', 1.0); // 口の「あ」
-          vrm.expressionManager.setValue('blink', 1.0);
-          vrm.expressionManager.update();
-
           t.pushEvent('load_model', { status: 'completion', name: name });
 
         },
@@ -360,8 +355,9 @@ export const hooks = {
       this.handleEvent("getBone", data => {
         this.getBone(data.name)
       });
-
-
+      this.handleEvent("setBlendShape", data => {
+        this.setBlendShape(data.name, data.key, data.value)
+      });
       this.handleEvent("rotationBone", data => {
         this.rotationBone(data.name, data.bone_name, data.x, data.y, data.z)
       });

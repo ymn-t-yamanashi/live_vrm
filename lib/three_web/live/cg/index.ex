@@ -10,13 +10,12 @@ defmodule ThreeWeb.CgLive.Index do
       |> assign(data: initialization_character_data())
       |> load_model("test", "images/test.vrm")
 
-
     {:ok, main(socket)}
   end
 
   # @impl true
   def handle_info(:update, socket) do
-    #Process.send_after(self(), :update, 12)
+    # Process.send_after(self(), :update, 12)
     {:noreply, main(socket)}
   end
 
@@ -28,10 +27,11 @@ defmodule ThreeWeb.CgLive.Index do
       |> rotation("test", 0, 3.1, 0)
       |> rotation_bone("test", "J_Bip_R_UpperArm", -1.0, 1.2, 0.5)
       |> rotation_bone("test", "J_Bip_L_UpperArm", -1.0, -1.2, -0.5)
+      |> set_blend_shape("test", "aa", 0.2)
+      |> set_blend_shape("test", "blink", 1.0)
 
     {:noreply, socket}
   end
-
 
   defp initialization_character_data() do
     0
@@ -41,12 +41,11 @@ defmodule ThreeWeb.CgLive.Index do
     character_data = update(socket.assigns.data)
 
     socket
-    #|> rotation("test", 0, character_data / 4, 0)
+    # |> rotation("test", 0, character_data / 4, 0)
     |> assign(data: character_data)
   end
 
   defp update(character_data) do
     character_data + 0.05
   end
-
 end
