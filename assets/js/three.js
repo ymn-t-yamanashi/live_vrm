@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { VRM, ßVRMLoaderPlugin } from '@pixiv/three-vrm'; // プラグインを登録して GLTFLoader で VRM を扱う
+
 
 export const hooks = {
   threejs: {
@@ -32,37 +34,127 @@ export const hooks = {
       this.v.scene.add(cube);
       this.v[name] = cube;
     },
-    rotation(name, x, y, z) {
+    position: function(name, x, y, z) {
       if (this.v[name] == undefined) return;
-      let rotation = this.v[name].rotation;
-      if (x != null) rotation.x = x;
-      if (y != null) rotation.y = y;
-      if (z != null) rotation.z = z;
-    },
-    position(name, x, y, z) {
-      if (this.v[name] == undefined) return;
-      let position = this.v[name].position;
+      var target = this.v[name];
+
+      // VRM インスタンスなら .scene を使う
+      if (target.scene && target.scene instanceof THREE.Object3D) {
+        target = target.scene;
+      }
+
+      var position = target.position;
+      if (!position) return;
       if (x != null) position.x = x;
       if (y != null) position.y = y;
       if (z != null) position.z = z;
     },
-    loadModel(name, path) {
-      const loader = new GLTFLoader();
-      const v = this.v
-      const t = this
+
+    // rotation: Object3D または VRM に対応
+    rotation: function(name, x, y, z) {
+      if (this.v[name] == undefined) return;
+      var target = this.v[name];
+
+      if (target.scene && target.scene instanceof THREE.Object3D) {
+        target = target.scene;
+      }
+
+      var rot = target.rotation;
+      if (!rot) return;
+      if (x != null) rot.x = x;
+      if (y != null) rot.y = y;
+      if (z != null) rot.z = z;
+    },
+
+    // rotationBone: VRM と Object3D の双方に対応してボーンを探す
+    rotationBone: function(name, boneName, x, y, z) {
+      if (this.v[name] == undefined) return;
+      var modelOrVrm = this.v[name];
+
+      // VRM の場合は .scene に実体がある
+      var root = (modelOrVrm.scene && modelOrVrm.scene instanceof THREE.Object3D) ? modelOrVrm.scene : modelOrVrm;
+
+      var bone = root.getObjectByName(boneName);
+      if (!bone) {
+        console.warn("bone '" + boneName + "' not found on model '" + name + "'");
+        return;
+      }
+      if (x != null) bone.rotation.x = x;
+      if (y != null) bone.rotation.y = y;
+      if (z != null) bone.rotation.z = z;
+    },
+
+    // loadModel(name, path) {
+    //   const loader = new GLTFLoader();
+    //   const v = this.v
+    //   const t = this
+    //   loader.load(
+    //     path, // VRoid Studioから出力したVRMファイル名
+    //     function (gltf) {
+    //       let model = gltf.scene; // ロードされたシーン全体を格納
+    //       v.scene.add(model);
+    //       v[name] = model;
+    //       t.pushEvent('load_model', { status: "completion", name: name })
+    //     },
+    //     function (xhr) {
+    //       console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    //     },
+    //     function (error) {
+    //       console.error('An error happened', error);
+    //     }
+    //   );
+    // },
+    loadModel: function (name, path) {
+      var loader = new GLTFLoader();
+      // register VRM plugin (function form to avoid =>)
+      loader.register(function (parser) {
+        return new VRMLoaderPlugin(parser);
+      });
+
+      var self = this;
+      var v = this.v;
+      var t = this;
+
       loader.load(
-        path, // VRoid Studioから出力したVRMファイル名
+        path,
         function (gltf) {
-          let model = gltf.scene; // ロードされたシーン全体を格納
-          v.scene.add(model);
-          v[name] = model;
-          t.pushEvent('load_model', { status: "completion", name: name })
+          // three-vrm は gltf.userData.vrm に VRM オブジェクトを格納する
+          var vrm = gltf.userData && gltf.userData.vrm;
+          // var vrm = gltf.userData.vrm;
+          if (!vrm) {
+            console.error('Loaded file is not a VRM or vrm not found in gltf.userData.');
+            t.pushEvent('load_model', { status: 'error', name: name, message: 'not a VRM' });
+            return;
+          }
+
+          // optional: VRM の向き調整
+          vrm.scene.rotation.y = Math.PI;
+
+          // シーンへ追加 & キャッシュ
+          v.scene.add(vrm.scene);
+          v[name] = vrm; // VRM オブジェクトを保存（expressionManager 等を使えるように）
+          v[name + '_gltf'] = gltf;
+
+          // レンダーループで vrm.update を呼ぶためにキャッシュ
+          if (!v._vrms) v._vrms = [];
+          v._vrms.push(vrm);
+
+          vrm.blendShapeProxy.setValue('A', 1.0);
+          // vrm.blendShapeProxy.update();
+          // setBlendShape(name, 'A', 1.0);
+
+          // vrm.blendShapeProxy.setValue('A', 1.0);
+          t.pushEvent('load_model', { status: 'completion', name: name });
+          
         },
         function (xhr) {
-          console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+          if (xhr && xhr.total) {
+            console.log(Math.floor((xhr.loaded / xhr.total) * 100) + '% loaded');
+          }
         },
         function (error) {
-          console.error('An error happened', error);
+          console.error('An error happened while loading VRM', error);
+          t.pushEvent('load_model', { status: 'error', name: name, error: String(error) });
         }
       );
     },
@@ -72,17 +164,26 @@ export const hooks = {
       const model = this.v[name];
       model.traverse((obj) => { if (obj.isBone) t.pushEvent('get_bone', { name: obj.name }) });
     },
-    rotationBone(name, boneName, x, y, z) {
-      if (this.v[name] == undefined) return;
-      const model = this.v[name];
-      // VRoidモデルの構造に合わせて、腕のボーンを探す
-      // ボーンの名前はVRoid Studioで確認してください。
-      const bone = model.getObjectByName(boneName);
+    rotationBone: function(name, boneName, x, y, z) {
+      const vrm = this.v[name];
+      if (!vrm) return;
 
-      if (!bone) return;
+      const model = vrm.scene;
+
+      const bone = model.getObjectByName(boneName);
+      if (!bone) {
+        console.warn("Bone not found:", boneName);
+        return;
+      }
+
       if (x != null) bone.rotation.x = x;
       if (y != null) bone.rotation.y = y;
       if (z != null) bone.rotation.z = z;
+    },
+    setBlendShape(name, key, value) {
+      const vrm = this.v[name];
+      vrm.expressionManager.setValue(key, value);
+      vrm.expressionManager.update();
     },
     loadTexture(name, path) {
       const v = this.v
@@ -335,7 +436,7 @@ export const hooks = {
       const scene = new THREE.Scene();
 
       // 環境光の追加 (シーン全体を均一に照らす)
-      const ambientLight = new THREE.AmbientLight(0xffffff, 20.0); // 色と強度
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // 色と強度
       scene.add(ambientLight);
 
       // 平行光源の追加 (太陽のように特定方向から照らす)

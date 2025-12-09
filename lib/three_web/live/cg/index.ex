@@ -16,13 +16,14 @@ defmodule ThreeWeb.CgLive.Index do
 
   # @impl true
   def handle_info(:update, socket) do
-    Process.send_after(self(), :update, 12)
+    #Process.send_after(self(), :update, 12)
     {:noreply, main(socket)}
   end
 
   def handle_event("load_model", %{"name" => "test", "status" => "completion"}, socket) do
     socket =
       socket
+      |> position("test", 0, -1.4, 4.5)
       |> position("test", 0, -1.4, 4.5)
       |> rotation("test", 0, 3.1, 0)
       |> rotation_bone("test", "J_Bip_R_UpperArm", -1.0, 1.2, 0.5)
