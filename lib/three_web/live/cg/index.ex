@@ -15,7 +15,7 @@ defmodule ThreeWeb.CgLive.Index do
 
   # @impl true
   def handle_info(:update, socket) do
-    # Process.send_after(self(), :update, 12)
+    Process.send_after(self(), :update, 250)
     {:noreply, main(socket)}
   end
 
@@ -41,11 +41,11 @@ defmodule ThreeWeb.CgLive.Index do
     character_data = update(socket.assigns.data)
 
     socket
-    # |> rotation("test", 0, character_data / 4, 0)
+    |> set_blend_shape("test", "aa", character_data)
+    |> set_blend_shape("test", "blink", character_data)
     |> assign(data: character_data)
   end
 
-  defp update(character_data) do
-    character_data + 0.05
-  end
+  defp update(1), do: 0
+  defp update(0), do: 1
 end
