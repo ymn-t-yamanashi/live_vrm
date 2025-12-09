@@ -34,7 +34,7 @@ export const hooks = {
       this.v.scene.add(cube);
       this.v[name] = cube;
     },
-    position: function(name, x, y, z) {
+    position(name, x, y, z) {
       if (this.v[name] == undefined) return;
       var target = this.v[name];
 
@@ -49,9 +49,7 @@ export const hooks = {
       if (y != null) position.y = y;
       if (z != null) position.z = z;
     },
-
-    // rotation: Object3D または VRM に対応
-    rotation: function(name, x, y, z) {
+    rotation(name, x, y, z) {
       if (this.v[name] == undefined) return;
       var target = this.v[name];
 
@@ -65,9 +63,7 @@ export const hooks = {
       if (y != null) rot.y = y;
       if (z != null) rot.z = z;
     },
-
-    // rotationBone: VRM と Object3D の双方に対応してボーンを探す
-    rotationBone: function(name, boneName, x, y, z) {
+    rotationBone(name, boneName, x, y, z) {
       if (this.v[name] == undefined) return;
       var modelOrVrm = this.v[name];
 
@@ -83,28 +79,7 @@ export const hooks = {
       if (y != null) bone.rotation.y = y;
       if (z != null) bone.rotation.z = z;
     },
-
-    // loadModel(name, path) {
-    //   const loader = new GLTFLoader();
-    //   const v = this.v
-    //   const t = this
-    //   loader.load(
-    //     path, // VRoid Studioから出力したVRMファイル名
-    //     function (gltf) {
-    //       let model = gltf.scene; // ロードされたシーン全体を格納
-    //       v.scene.add(model);
-    //       v[name] = model;
-    //       t.pushEvent('load_model', { status: "completion", name: name })
-    //     },
-    //     function (xhr) {
-    //       console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-    //     },
-    //     function (error) {
-    //       console.error('An error happened', error);
-    //     }
-    //   );
-    // },
-    loadModel: function (name, path) {
+    loadModel(name, path) {
       var loader = new GLTFLoader();
       // register VRM plugin (function form to avoid =>)
       loader.register(function (parser) {
@@ -139,21 +114,12 @@ export const hooks = {
           if (!v._vrms) v._vrms = [];
           v._vrms.push(vrm);
 
-          console.log("-------------");
-          console.log(vrm.expressionManager);
-          console.log("-------------");
-
           vrm.expressionManager.setValue('aa', 1.0); // 口の「あ」
           vrm.expressionManager.setValue('blink', 1.0);
           vrm.expressionManager.update();
 
-          // vrm.blendShapeProxy.setValue('A', 1.0);
-          // vrm.blendShapeProxy.update();
-          // setBlendShape(name, 'A', 1.0);
-
-          // vrm.blendShapeProxy.setValue('A', 1.0);
           t.pushEvent('load_model', { status: 'completion', name: name });
-          
+
         },
         function (xhr) {
           if (xhr && xhr.total) {
@@ -395,7 +361,7 @@ export const hooks = {
         this.getBone(data.name)
       });
 
-      
+
       this.handleEvent("rotationBone", data => {
         this.rotationBone(data.name, data.bone_name, data.x, data.y, data.z)
       });
