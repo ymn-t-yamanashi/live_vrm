@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { VRM, ßVRMLoaderPlugin } from '@pixiv/three-vrm'; // プラグインを登録して GLTFLoader で VRM を扱う
+import { VRMLoaderPlugin } from '@pixiv/three-vrm'; // プラグインを登録して GLTFLoader で VRM を扱う
 
 
 export const hooks = {
@@ -139,7 +139,8 @@ export const hooks = {
           if (!v._vrms) v._vrms = [];
           v._vrms.push(vrm);
 
-          vrm.blendShapeProxy.setValue('A', 1.0);
+          console.log(vrm)
+          // vrm.blendShapeProxy.setValue('A', 1.0);
           // vrm.blendShapeProxy.update();
           // setBlendShape(name, 'A', 1.0);
 
@@ -163,22 +164,6 @@ export const hooks = {
       const t = this
       const model = this.v[name];
       model.traverse((obj) => { if (obj.isBone) t.pushEvent('get_bone', { name: obj.name }) });
-    },
-    rotationBone: function(name, boneName, x, y, z) {
-      const vrm = this.v[name];
-      if (!vrm) return;
-
-      const model = vrm.scene;
-
-      const bone = model.getObjectByName(boneName);
-      if (!bone) {
-        console.warn("Bone not found:", boneName);
-        return;
-      }
-
-      if (x != null) bone.rotation.x = x;
-      if (y != null) bone.rotation.y = y;
-      if (z != null) bone.rotation.z = z;
     },
     setBlendShape(name, key, value) {
       const vrm = this.v[name];
