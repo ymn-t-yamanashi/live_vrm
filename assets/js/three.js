@@ -139,7 +139,14 @@ export const hooks = {
           if (!v._vrms) v._vrms = [];
           v._vrms.push(vrm);
 
-          console.log(vrm)
+          console.log("-------------");
+          console.log(vrm.expressionManager);
+          console.log("-------------");
+
+          vrm.expressionManager.setValue('aa', 1.0); // 口の「あ」
+          vrm.expressionManager.setValue('blink', 1.0);
+          vrm.expressionManager.update();
+
           // vrm.blendShapeProxy.setValue('A', 1.0);
           // vrm.blendShapeProxy.update();
           // setBlendShape(name, 'A', 1.0);
